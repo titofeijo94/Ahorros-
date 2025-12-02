@@ -3,88 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Organizador UTPL - Gestión y Reportes</title>
+    <title>UTPL - Abanderados 2025</title>
     
     <!-- Favicon -->
     <link rel="icon" href="data:;base64,iVBORw0KGgo=">
 
-    <!-- ESTILOS BÁSICOS -->
+    <!-- ESTILOS -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { 
-            font-family: 'Segoe UI', 'Roboto', Helvetica, Arial, sans-serif; 
-            margin: 0; 
-            background-color: #f8fafc; 
-            color: #1e293b;
-        }
-        .initial-loader {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            color: #1e3a8a;
-            text-align: center;
-            padding: 20px;
-        }
-        .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #facc15; 
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin-bottom: 20px;
-        }
+        body { font-family: 'Segoe UI', sans-serif; background-color: #f8fafc; color: #1e293b; }
+        .spinner { border: 4px solid #e2e8f0; border-top: 4px solid #facc15; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        /* ESTILOS PARA IMPRESIÓN (OCULTAR INTERFAZ) */
-        @media print {
-            .no-print { display: none !important; }
-            .print-only { display: block !important; }
-            body { background: white; -webkit-print-color-adjust: exact; }
-            #root { padding: 0; }
-        }
-        .print-only { display: none; }
     </style>
 
-    <!-- LIBRERÍAS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js" crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js" crossorigin="anonymous"></script>
+    <!-- REACT -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js" crossorigin></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js" crossorigin></script>
 </head>
 <body>
     <div id="root">
-        <div class="initial-loader">
-            <div class="spinner"></div>
-            <h2 style="font-weight: 700; font-size: 1.5rem;">Cargando Sistema...</h2>
+        <div class="h-screen flex flex-col items-center justify-center text-blue-900">
+            <div class="spinner mb-4"></div>
+            <h2 class="text-xl font-bold">Iniciando Sistema...</h2>
         </div>
     </div>
 
     <script type="text/babel" data-presets="env,react">
-        const { useState, useMemo, useEffect } = React;
+        const { useState, useMemo, useEffect, useRef } = React;
 
-        // --- FUNCIONES DE SEGURIDAD PARA GUARDADO LOCAL ---
+        // URL DE TU GOOGLE APPS SCRIPT
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwoSbym3cxzdsjzx2qGq75RNhe7P6p_pX5_OrAktMSXJiowE9aVqfZ6EexMVV8p2yj3/exec";
+
         const safeLoadStorage = (key) => {
             try {
                 const item = localStorage.getItem(key);
-                if (!item) return new Set();
-                const parsed = JSON.parse(item);
-                if (Array.isArray(parsed)) {
-                    return new Set(parsed);
-                } else {
-                    return new Set();
-                }
-            } catch (e) {
-                console.error("Error al leer memoria local:", e);
-                return new Set();
+                return item ? new Set(JSON.parse(item)) : new Set();
+            } catch (e) { return new Set(); }
+        };
+
+        // --- DIGNIDADES CORREGIDAS (PROTOCOLO) ---
+        const getDignity = (pos) => {
+            switch(pos) {
+                case 1: return "ABANDERADO DEL PABELLÓN NACIONAL";
+                case 2: return "PORTAESTANDARTE DE LA CIUDAD";  // Corregido
+                case 3: return "PORTAESTANDARTE INSTITUCIONAL";
+                case 4: return "1ER ESCOLTA PABELLÓN NACIONAL";
+                case 6: return "2DO ESCOLTA PABELLÓN NACIONAL";
+                case 7: return "1ER ESCOLTA ESTANDARTE DE LA CIUDAD"; // Corregido
+                case 8: return "2DO ESCOLTA ESTANDARTE DE LA CIUDAD"; // Corregido
+                case 9: return "1ER ESCOLTA ESTANDARTE INSTITUCIONAL";
+                case 10: return "2DO ESCOLTA ESTANDARTE INSTITUCIONAL";
+                default: return "ESTUDIANTE";
             }
         };
 
-        // --- ICONOS SVG ---
-        const ChairIcon = ({size=24, className="", fill="none"}) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M19 9V6a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v3"/><path d="M3 16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5a2 2 0 0 0-4 0v2H7v-2a2 2 0 0 0-4 0Z"/><path d="M5 18v2"/><path d="M19 18v2"/></svg>
-        );
+        // --- ICONOS ---
+        const ChairIcon = ({size=24, className="", fill="none"}) => (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M19 9V6a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v3"/><path d="M3 16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5a2 2 0 0 0-4 0v2H7v-2a2 2 0 0 0-4 0Z"/><path d="M5 18v2"/><path d="M19 18v2"/></svg>);
         const Search = ({size=24, className=""}) => (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>);
         const User = ({size=24, className=""}) => (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>);
         const X = ({size=24, className=""}) => (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M18 6 6 18"/><path d="m6 6 18 18"/></svg>);
@@ -93,330 +68,95 @@
         const Calendar = ({size=24, className=""}) => (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>);
         const ArrowLeft = ({size=24, className=""}) => (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>);
         const ChevronRight = ({size=24, className=""}) => (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m9 18 6-6-6-6"/></svg>);
-        const MousePointerClick = ({size=24, className=""}) => (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m9 9 5 12 1.8-5.2L21 14Z"/><path d="M7.2 2.2 8 5.1"/><path d="m5.1 8-2.9-.8"/><path d="M14 4.1 12 6"/><path d="m6 12-1.9 2"/></svg>);
         const Download = ({size=24, className=""}) => (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>);
         const FileSpreadsheet = ({size=24, className=""}) => (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h2"/><path d="M8 17h2"/><path d="M14 13h2"/><path d="M14 17h2"/></svg>);
-        const Copy = ({size=24, className=""}) => (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>);
-        const Printer = ({size=24, className=""}) => (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>);
+        const Medal = ({size=24, className=""}) => (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>);
 
-        // --- DATOS COMPLETOS ---
+        // --- DATOS ---
+        const createRow = (id, school, leftNames, rightNames, hasRector=true) => ({
+            id, school, hasRector,
+            seatsLeft: leftNames.map((n, i) => ({ id: `${id}-L-${i+1}`, name: n, pos: i+1, dignity: getDignity(i+1) })),
+            seatsRight: rightNames.map((n, i) => ({ id: `${id}-R-${i+6}`, name: n, pos: i+6, dignity: getDignity(i+6) }))
+        });
 
         const event1Data = [
-          {
-            id: 'e1-row-1',
-            school: 'UE San José',
-            seatsLeft: [
-              { id: 'e1-s1-1', name: 'GALARZA CHONILLO MELISSA THAIMI', pos: 1 },
-              { id: 'e1-s1-2', name: 'INTRIAGO ZAMBRANO GABRIEL ADRIAN', pos: 2 },
-              { id: 'e1-s1-3', name: 'TARANTO SUAREZ GABRIELA STEFANÍA', pos: 3 },
-              { id: 'e1-s1-4', name: 'BARRETO VELIZ JENNIFER PATRICIA', pos: 4 },
-            ],
-            hasRector: true,
-            seatsRight: [
-              { id: 'e1-s1-6', name: 'MENÉNDEZ PALACIOS RITSI MONSERRATE', pos: 6 },
-              { id: 'e1-s1-7', name: 'MARTÍNEZ AMORES OMAYRA KAINA', pos: 7 },
-              { id: 'e1-s1-8', name: 'BOCCANEDES BARCIA MADELAINE ISABELLA', pos: 8 },
-              { id: 'e1-s1-9', name: 'VEGA PEÑA ANENT KINTIA', pos: 9 },
-              { id: 'e1-s1-10', name: 'VILLACIS FRANCO SHARICK NATHALIA', pos: 10 },
-            ]
-          },
-          {
-            id: 'e1-row-2',
-            school: 'UE Lev Vigostky',
-            seatsLeft: [
-              { id: 'e1-s2-1', name: 'MEJIA MACÍAS AXEL ARGELIS', pos: 1 },
-              { id: 'e1-s2-2', name: 'MENDOZA BUSTAMANTE KARLA ABIGAIL', pos: 2 },
-              { id: 'e1-s2-3', name: 'ALONZO INTRIAGO JESÚS AMADO', pos: 3 },
-              { id: 'e1-s2-4', name: 'MEDINA ANDRADE LISS NORELLY', pos: 4 },
-            ],
-            hasRector: true,
-            seatsRight: [
-              { id: 'e1-s2-6', name: 'VILLACRESES ALARCÓN AMY MAITE', pos: 6 },
-              { id: 'e1-s2-7', name: 'CATAGUA LOPEZ JOHAN MANUEL', pos: 7 },
-              { id: 'e1-s2-8', name: 'VINCES VELEZ HERNY DAVID', pos: 8 },
-              { id: 'e1-s2-9', name: 'PINARGOTE PALMA KEVIN XAVIER', pos: 9 },
-              { id: 'e1-s2-10', name: 'SALTOS QUIROZ SHERLY MICHEL', pos: 10 },
-            ]
-          },
-          {
-            id: 'e1-row-3',
-            school: 'UE Olga Meza Santana',
-            seatsLeft: [
-              { id: 'e1-s3-1', name: 'MENDOZA GARCIA MEDARDO ANTHONIO', pos: 1 },
-              { id: 'e1-s3-2', name: 'BAILON CASTILLO JAIRO YAIR', pos: 2 },
-              { id: 'e1-s3-3', name: 'PALMA INDACOCHEA AARON JURHELL', pos: 3 },
-              { id: 'e1-s3-4', name: 'PILOSO CEDEÑO JEAN POOL', pos: 4 },
-            ],
-            hasRector: true,
-            seatsRight: [
-              { id: 'e1-s3-6', name: 'CHANCAY ALVARADO SOFIA ALEJANDRA', pos: 6 },
-              { id: 'e1-s3-7', name: 'SALINAS DELGADO VICTOR XAVIER', pos: 7 },
-              { id: 'e1-s3-8', name: 'ZAMBRANO BORRERO MIA SARAI', pos: 8 },
-              { id: 'e1-s3-9', name: 'PICO MUÑOZ CRISTHOPER DAMIAN', pos: 9 },
-              { id: 'e1-s3-10', name: 'DELGADO VELEZ GABRIELA NATHALIE', pos: 10 },
-            ]
-          },
-          {
-            id: 'e1-row-4',
-            school: 'UE Kruger School',
-            seatsLeft: [
-              { id: 'e1-s4-1', name: 'LOPEZ PINARGOTE LEIDY ZULEIKA', pos: 1 },
-              { id: 'e1-s4-2', name: 'VILLALVA GONZÁLEZ DAVID', pos: 2 },
-              { id: 'e1-s4-3', name: 'POLANCO BENALCÁZAR FRANKLIN ALEJANDRO', pos: 3 },
-              { id: 'e1-s4-4', name: 'SUAREZ QUIROZ STALIN ENRIQUE', pos: 4 },
-            ],
-            hasRector: true,
-            seatsRight: [
-              { id: 'e1-s4-6', name: 'ALVAREZ ROBLES NAOMI ANAIS', pos: 6 },
-              { id: 'e1-s4-7', name: 'MENDOZA BRAVO MICHAEL ALEJANDRO', pos: 7 },
-              { id: 'e1-s4-8', name: 'VELEZ MUÑOZ RONALD ESTEVEN', pos: 8 },
-              { id: 'e1-s4-9', name: 'BASURTO MIELES ANA MARÍA', pos: 9 },
-              { id: 'e1-s4-10', name: 'SIGCHO RIVADENEIRA FABIANA ANTONIA', pos: 10 },
-            ]
-          },
-          {
-            id: 'e1-row-5',
-            school: 'UE Lev Vigostky',
-            seatsLeft: [
-              { id: 'e1-s5-1', name: 'PAREDES CHONG CESAR ENRIQUE', pos: 1 },
-              { id: 'e1-s5-2', name: 'MANTUANO TOALA DAVID GABRIEL', pos: 2 },
-              { id: 'e1-s5-3', name: 'QUIJIJE MOREIRA RAÚL ANDRÉS', pos: 3 },
-              { id: 'e1-s5-4', name: 'VACANTE', pos: 4 },
-            ],
-            hasRector: false,
-            seatsRight: [
-               { id: 'e1-s5-6', name: 'VACANTE', pos: 6 },
-               { id: 'e1-s5-7', name: 'VACANTE', pos: 7 },
-               { id: 'e1-s5-8', name: 'VACANTE', pos: 8 },
-               { id: 'e1-s5-9', name: 'VACANTE', pos: 9 },
-               { id: 'e1-s5-10', name: 'VACANTE', pos: 10 },
-            ]
-          }
+            createRow('e1-r1', 'UE San José', 
+                ['GALARZA CHONILLO MELISSA THAIMI', 'INTRIAGO ZAMBRANO GABRIEL ADRIAN', 'TARANTO SUAREZ GABRIELA STEFANÍA', 'BARRETO VELIZ JENNIFER PATRICIA'],
+                ['MENÉNDEZ PALACIOS RITSI MONSERRATE', 'MARTÍNEZ AMORES OMAYRA KAINA', 'BOCCANEDES BARCIA MADELAINE ISABELLA', 'VEGA PEÑA ANENT KINTIA', 'VILLACIS FRANCO SHARICK NATHALIA']
+            ),
+            createRow('e1-r2', 'UE Lev Vigostky', 
+                ['MEJIA MACÍAS AXEL ARGELIS', 'MENDOZA BUSTAMANTE KARLA ABIGAIL', 'ALONZO INTRIAGO JESÚS AMADO', 'MEDINA ANDRADE LISS NORELLY'],
+                ['VILLACRESES ALARCÓN AMY MAITE', 'CATAGUA LOPEZ JOHAN MANUEL', 'VINCES VELEZ HERNY DAVID', 'PINARGOTE PALMA KEVIN XAVIER', 'SALTOS QUIROZ SHERLY MICHEL']
+            ),
+            createRow('e1-r3', 'UE Olga Meza Santana', 
+                ['MENDOZA GARCIA MEDARDO ANTHONIO', 'BAILON CASTILLO JAIRO YAIR', 'PALMA INDACOCHEA AARON JURHELL', 'PILOSO CEDEÑO JEAN POOL'],
+                ['CHANCAY ALVARADO SOFIA ALEJANDRA', 'SALINAS DELGADO VICTOR XAVIER', 'ZAMBRANO BORRERO MIA SARAI', 'PICO MUÑOZ CRISTHOPER DAMIAN', 'DELGADO VELEZ GABRIELA NATHALIE']
+            ),
+            createRow('e1-r4', 'UE Kruger School', 
+                ['LOPEZ PINARGOTE LEIDY ZULEIKA', 'VILLALVA GONZÁLEZ DAVID', 'POLANCO BENALCÁZAR FRANKLIN ALEJANDRO', 'SUAREZ QUIROZ STALIN ENRIQUE'],
+                ['ALVAREZ ROBLES NAOMI ANAIS', 'MENDOZA BRAVO MICHAEL ALEJANDRO', 'VELEZ MUÑOZ RONALD ESTEVEN', 'BASURTO MIELES ANA MARÍA', 'SIGCHO RIVADENEIRA FABIANA ANTONIA']
+            ),
+            createRow('e1-r5', 'UE Lev Vigostky (B)', 
+                ['PAREDES CHONG CESAR ENRIQUE', 'MANTUANO TOALA DAVID GABRIEL', 'QUIJIJE MOREIRA RAÚL ANDRÉS', 'VACANTE'],
+                ['VACANTE', 'VACANTE', 'VACANTE', 'VACANTE', 'VACANTE'], false
+            )
         ];
 
         const event2Data = [
-          {
-            id: 'e2-row-1',
-            school: 'Academia Naval Jambelí',
-            seatsLeft: [
-              { id: 'e2-s1-1', name: 'GUILLEN LINO JONATHAN ISAAC', pos: 1 },
-              { id: 'e2-s1-2', name: 'VELIZ ZAMBRANO DANNA SAMANTHA', pos: 2 },
-              { id: 'e2-s1-3', name: 'RIVERA SANTANA ARIANA SCARLETH', pos: 3 },
-              { id: 'e2-s1-4', name: 'MASTERRENA CARRION RAMON REINALDO', pos: 4 },
-            ],
-            hasRector: true,
-            seatsRight: [
-              { id: 'e2-s1-6', name: 'PIN TUBAY FELIPE MATEO', pos: 6 },
-              { id: 'e2-s1-7', name: 'PIN TUBAY FELIPE MATEO (2)', pos: 7 },
-              { id: 'e2-s1-8', name: 'VELEZ CEDEÑO EMILY YORIBEL', pos: 8 },
-              { id: 'e2-s1-9', name: 'QUIJANO BRAVO FELIPE ALEXANDER', pos: 9 },
-              { id: 'e2-s1-10', name: 'QUIJANO BRAVO FELIPE ALEXANDER (2)', pos: 10 },
-            ]
-          },
-          {
-            id: 'e2-row-2',
-            school: 'UE Luis Arboleda Martinez',
-            seatsLeft: [
-              { id: 'e2-s2-1', name: 'BURGOS GAVILANEZ NIURKA BEATRIZ', pos: 1 },
-              { id: 'e2-s2-2', name: 'MONTES MOREIRA FREDDY YASSIER', pos: 2 },
-              { id: 'e2-s2-3', name: 'BAILON CASTILLO JAIRO YAIR', pos: 3 },
-              { id: 'e2-s2-4', name: 'NAVARRETE CEDEÑO JOSÉ LEONARDO', pos: 4 },
-            ],
-            hasRector: true,
-            seatsRight: [
-              { id: 'e2-s2-6', name: 'ANCHUNDIA FLORES PATRICIO GEOVANNY', pos: 6 },
-              { id: 'e2-s2-7', name: 'RODRIGUEZ SALMERON EIDAN ADRIAN', pos: 7 },
-              { id: 'e2-s2-8', name: 'SUAREZ VELEZ RONNY FABIAN', pos: 8 },
-              { id: 'e2-s2-9', name: 'MACIAS ALARCÓN JOEL ANDRÉS', pos: 9 },
-              { id: 'e2-s2-10', name: 'VINCES PERÉZ LUIS FERNANDO', pos: 10 },
-            ]
-          },
-          {
-            id: 'e2-row-3',
-            school: 'UE Tohallí',
-            seatsLeft: [
-              { id: 'e2-s3-1', name: 'DANNA ISABEL VELASQUEZ PEÑAHERRIETA', pos: 1 },
-              { id: 'e2-s3-2', name: 'ROSELYN ANAÍS LOPEZ DELGADO', pos: 2 },
-              { id: 'e2-s3-3', name: 'LUISA FERNANDA OTERO CHACON', pos: 3 },
-              { id: 'e2-s3-4', name: 'MAHOLY JAMILETH ALAVA DELGADO', pos: 4 },
-            ],
-            hasRector: true,
-            seatsRight: [
-              { id: 'e2-s3-6', name: 'VALERIA ISABEL CAÑARTE REYES', pos: 6 },
-              { id: 'e2-s3-7', name: 'SARA ROMINA PICO ORTIZ', pos: 7 },
-              { id: 'e2-s3-8', name: 'GEANELLA ANDREÍNA TUBAY ALVAREZ', pos: 8 },
-              { id: 'e2-s3-9', name: 'DARA MADAI SANCHEZ ZALDUMBIDE', pos: 9 },
-              { id: 'e2-s3-10', name: 'DAMARIS BELÉN CUSME MENDOZA', pos: 10 },
-            ]
-          },
-          {
-            id: 'e2-row-4',
-            school: 'UE Camilo Ponce Enrique',
-            seatsLeft: [
-              { id: 'e2-s4-1', name: 'PALACIOS REYES SOLANGE YISLEY', pos: 1 },
-              { id: 'e2-s4-2', name: 'NARANJO CARRASCO ASHLEY ALEXANDRA', pos: 2 },
-              { id: 'e2-s4-3', name: 'MIRANDA QUIMIZ ARIANA VALESKA', pos: 3 },
-              { id: 'e2-s4-4', name: 'PATA LUCAS JEALENE TAIS', pos: 4 },
-            ],
-            hasRector: true,
-            seatsRight: [
-              { id: 'e2-s4-6', name: 'FRANCO MACIAS BRITHANY XIOMARA', pos: 6 },
-              { id: 'e2-s4-7', name: 'ROSADO SANCHEZ BRITHANY JAMILETH', pos: 7 },
-              { id: 'e2-s4-8', name: 'ROLDAN SOZA DOMENICA DAYANNA', pos: 8 },
-              { id: 'e2-s4-9', name: 'MERO ALARCON SARA VALENTINA', pos: 9 },
-              { id: 'e2-s4-10', name: 'PILLIGUA BASURTO ALIS VICTORIA', pos: 10 },
-            ]
-          }
+            createRow('e2-r1', 'Academia Naval Jambelí', 
+                ['GUILLEN LINO JONATHAN ISAAC', 'VELIZ ZAMBRANO DANNA SAMANTHA', 'RIVERA SANTANA ARIANA SCARLETH', 'MASTERRENA CARRION RAMON REINALDO'],
+                ['PIN TUBAY FELIPE MATEO', 'PIN TUBAY FELIPE MATEO (2)', 'VELEZ CEDEÑO EMILY YORIBEL', 'QUIJANO BRAVO FELIPE ALEXANDER', 'QUIJANO BRAVO FELIPE ALEXANDER (2)']
+            ),
+            createRow('e2-r2', 'UE Luis Arboleda Martinez', 
+                ['BURGOS GAVILANEZ NIURKA BEATRIZ', 'MONTES MOREIRA FREDDY YASSIER', 'BAILON CASTILLO JAIRO YAIR', 'NAVARRETE CEDEÑO JOSÉ LEONARDO'],
+                ['ANCHUNDIA FLORES PATRICIO GEOVANNY', 'RODRIGUEZ SALMERON EIDAN ADRIAN', 'SUAREZ VELEZ RONNY FABIAN', 'MACIAS ALARCÓN JOEL ANDRÉS', 'VINCES PERÉZ LUIS FERNANDO']
+            ),
+            createRow('e2-r3', 'UE Tohallí', 
+                ['DANNA ISABEL VELASQUEZ PEÑAHERRIETA', 'ROSELYN ANAÍS LOPEZ DELGADO', 'LUISA FERNANDA OTERO CHACON', 'MAHOLY JAMILETH ALAVA DELGADO'],
+                ['VALERIA ISABEL CAÑARTE REYES', 'SARA ROMINA PICO ORTIZ', 'GEANELLA ANDREÍNA TUBAY ALVAREZ', 'DARA MADAI SANCHEZ ZALDUMBIDE', 'DAMARIS BELÉN CUSME MENDOZA']
+            ),
+            createRow('e2-r4', 'UE Camilo Ponce Enrique', 
+                ['PALACIOS REYES SOLANGE YISLEY', 'NARANJO CARRASCO ASHLEY ALEXANDRA', 'MIRANDA QUIMIZ ARIANA VALESKA', 'PATA LUCAS JEALENE TAIS'],
+                ['FRANCO MACIAS BRITHANY XIOMARA', 'ROSADO SANCHEZ BRITHANY JAMILETH', 'ROLDAN SOZA DOMENICA DAYANNA', 'MERO ALARCON SARA VALENTINA', 'PILLIGUA BASURTO ALIS VICTORIA']
+            )
         ];
 
         const event3Data = [
-          {
-            id: 'e3-row-1',
-            school: 'UE Fiscal Cinco de Junio',
-            seatsLeft: [
-              { id: 'e3-s1-1', name: 'SORNOZA ZAMBRANO SHEYLA JEMINA', pos: 1 },
-              { id: 'e3-s1-2', name: 'MOREIRA MENDOZA WILSON JOSUE', pos: 2 },
-              { id: 'e3-s1-3', name: 'MARCILLO BRAVO KARLA MILEY', pos: 3 },
-              { id: 'e3-s1-4', name: 'MACIAS LUGO ELIAN ALEXANDER', pos: 4 },
-            ],
-            hasRector: true,
-            seatsRight: [
-              { id: 'e3-s1-6', name: 'PIGUAVE PILOZO JOSE ANDRES', pos: 6 },
-              { id: 'e3-s1-7', name: 'GUANANGA CUZQUILLO ADRIAN SEBASTIAN', pos: 7 },
-              { id: 'e3-s1-8', name: 'RUPERTI SUAREZ DOMENICA IVETTE', pos: 8 },
-              { id: 'e3-s1-9', name: 'SORIANO BURBANO ILEANA NINETTE', pos: 9 },
-              { id: 'e3-s1-10', name: 'CEVALLOS MERINO DANNA SARELA', pos: 10 },
-            ]
-          },
-          {
-            id: 'e3-row-2',
-            school: 'UE Fiscal Manta',
-            seatsLeft: [
-              { id: 'e3-s2-1', name: 'DELGADO PINCAY ALEXANDRA MONSERRATE', pos: 1 },
-              { id: 'e3-s2-2', name: 'ESCOBAR CEDEÑO DAVID JHADIER', pos: 2 },
-              { id: 'e3-s2-3', name: 'MENENDEZ CHAVEZ ADRIAN ALBERTO', pos: 3 },
-              { id: 'e3-s2-4', name: 'MUÑOZ ALCIVAR ASHLEY PIERINA', pos: 4 },
-            ],
-            hasRector: true,
-            seatsRight: [
-              { id: 'e3-s2-6', name: 'ZAMBRANO SANCHEZ JURAIMA DANIELA', pos: 6 },
-              { id: 'e3-s2-7', name: 'VALDIVIEZO ARTEAGA ARELYS ALEXANDRA', pos: 7 },
-              { id: 'e3-s2-8', name: 'ZAMORA CEDEÑO JUAN SEBASTIAN', pos: 8 },
-              { id: 'e3-s2-9', name: 'CASTRO CLARKE MAQUINTAIRE BRAD DOMINIQUE', pos: 9 },
-              { id: 'e3-s2-10', name: 'QUIROZ LUCAS KARLA WALESKA', pos: 10 },
-            ]
-          },
-          {
-            id: 'e3-row-3',
-            school: 'UE Fiscal 4 de Noviembre',
-            seatsLeft: [
-              { id: 'e3-s3-1', name: 'RAMOS CAYAMA NOHELY MARIANA', pos: 1 },
-              { id: 'e3-s3-2', name: 'CHAVARRIA CARREÑO ASHLEY ROMINA', pos: 2 },
-              { id: 'e3-s3-3', name: 'BARRE MERA ALIS LISETH', pos: 3 },
-              { id: 'e3-s3-4', name: 'MENDOZA VINCES KRISTEL DAMARIS', pos: 4 },
-            ],
-            hasRector: true,
-            seatsRight: [
-              { id: 'e3-s3-6', name: 'MENDOZA VINCES BIANCA DAMARIS', pos: 6 },
-              { id: 'e3-s3-7', name: 'MOLINA LUCAS DAVID ISAAC', pos: 7 },
-              { id: 'e3-s3-8', name: 'MUÑIZ MERA INGRID ANAHI', pos: 8 },
-              { id: 'e3-s3-9', name: 'PICO DELGADO ANGELY VALERIA', pos: 9 },
-              { id: 'e3-s3-10', name: 'MERO BAILON SANTIAGO SMITH', pos: 10 },
-            ]
-          }
+            createRow('e3-r1', 'UE Fiscal Cinco de Junio', 
+                ['SORNOZA ZAMBRANO SHEYLA JEMINA', 'MOREIRA MENDOZA WILSON JOSUE', 'MARCILLO BRAVO KARLA MILEY', 'MACIAS LUGO ELIAN ALEXANDER'],
+                ['PIGUAVE PILOZO JOSE ANDRES', 'GUANANGA CUZQUILLO ADRIAN SEBASTIAN', 'RUPERTI SUAREZ DOMENICA IVETTE', 'SORIANO BURBANO ILEANA NINETTE', 'CEVALLOS MERINO DANNA SARELA']
+            ),
+            createRow('e3-r2', 'UE Fiscal Manta', 
+                ['DELGADO PINCAY ALEXANDRA MONSERRATE', 'ESCOBAR CEDEÑO DAVID JHADIER', 'MENENDEZ CHAVEZ ADRIAN ALBERTO', 'MUÑOZ ALCIVAR ASHLEY PIERINA'],
+                ['ZAMBRANO SANCHEZ JURAIMA DANIELA', 'VALDIVIEZO ARTEAGA ARELYS ALEXANDRA', 'ZAMORA CEDEÑO JUAN SEBASTIAN', 'CASTRO CLARKE MAQUINTAIRE BRAD DOMINIQUE', 'QUIROZ LUCAS KARLA WALESKA']
+            ),
+            createRow('e3-r3', 'UE Fiscal 4 de Noviembre', 
+                ['RAMOS CAYAMA NOHELY MARIANA', 'CHAVARRIA CARREÑO ASHLEY ROMINA', 'BARRE MERA ALIS LISETH', 'MENDOZA VINCES KRISTEL DAMARIS'],
+                ['MENDOZA VINCES BIANCA DAMARIS', 'MOLINA LUCAS DAVID ISAAC', 'MUÑIZ MERA INGRID ANAHI', 'PICO DELGADO ANGELY VALERIA', 'MERO BAILON SANTIAGO SMITH']
+            )
         ];
 
         const event4Data = [
-          {
-            id: 'e4-row-1',
-            school: 'UE Julio Pierregrosse',
-            seatsLeft: [
-              { id: 'e4-s1-1', name: 'DELGADO CHACON SAMUEL JOSE', pos: 1 },
-              { id: 'e4-s1-2', name: 'VARGAS CAICEDO MATHIAS JAVIER', pos: 2 },
-              { id: 'e4-s1-3', name: 'REYES DELGADO LUIS MATHEUS', pos: 3 },
-              { id: 'e4-s1-4', name: 'CEDEÑO DELGADO MARIA GABRIELA', pos: 4 },
-            ],
-            hasRector: true,
-            seatsRight: [
-              { id: 'e4-s1-6', name: 'CASTELLANOS MUÑOZ BRAYDEN MIGUEL', pos: 6 },
-              { id: 'e4-s1-7', name: 'VELASQUEZ PONCE ROLANDO ADRIAN', pos: 7 },
-              { id: 'e4-s1-8', name: 'SANCHEZ DELGADO MARCELO RAPHAEL', pos: 8 },
-              { id: 'e4-s1-9', name: 'MOREIRA CHAVEZ GIOVANNA MILENKA', pos: 9 },
-              { id: 'e4-s1-10', name: 'GARCIA VALLE CESAR EMILIO', pos: 10 },
-            ]
-          },
-          {
-            id: 'e4-row-2',
-            school: 'UE Israel',
-            seatsLeft: [
-              { id: 'e4-s2-1', name: 'ORTEGA CONFORME RAFELLA VALENTINA', pos: 1 },
-              { id: 'e4-s2-2', name: 'ORDOÑEZ PAZMIÑO CAMILA ESTEFANÍA', pos: 2 },
-              { id: 'e4-s2-3', name: 'ORTIZ AVILA PAOLO XAVIER', pos: 3 },
-              { id: 'e4-s2-4', name: 'PARRAGA MOGROÑEDA ALLYSON EILENE', pos: 4 },
-            ],
-            hasRector: true,
-            seatsRight: [
-              { id: 'e4-s2-6', name: 'LEITON MENDOZA DAIRA ABIGAIL', pos: 6 },
-              { id: 'e4-s2-7', name: 'ZAMORA CERÓN DEREK ISAAC', pos: 7 },
-              { id: 'e4-s2-8', name: 'OCHOA LIMONGI RICARDO', pos: 8 },
-              { id: 'e4-s2-9', name: 'BILBAO LA VIEJA FARFAN CARLOS EDUARDO', pos: 9 },
-              { id: 'e4-s2-10', name: 'PALMA FLORES YUSZETTY DAVID', pos: 10 },
-            ]
-          },
-          {
-            id: 'e4-row-3',
-            school: 'UE Fiscal Pedro Balda',
-            seatsLeft: [
-              { id: 'e4-s3-1', name: 'ZAMBRANO MOREIRA DANNA JUSMELY', pos: 1 },
-              { id: 'e4-s3-2', name: 'SANCHEZ GARCIA ESTHER ABIGAIL', pos: 2 },
-              { id: 'e4-s3-3', name: 'PONCE MERA MELANIE MONSERRATE', pos: 3 },
-              { id: 'e4-s3-4', name: 'MORAN ARAGUNDI KAREN GABRIELA', pos: 4 },
-            ],
-            hasRector: true,
-            seatsRight: [
-              { id: 'e4-s3-6', name: 'SANCHEZ ALVARADO MEYSEE MAYTE', pos: 6 },
-              { id: 'e4-s3-7', name: 'MEZA TOALA JOSENKA DOMENICA', pos: 7 },
-              { id: 'e4-s3-8', name: 'BAJAÑA CEDEÑO DILEIDY JETSARI', pos: 8 },
-              { id: 'e4-s3-9', name: 'CARDENAS CEVALLOS ASHLEY JELITZA', pos: 9 },
-              { id: 'e4-s3-10', name: 'ZAMBRANO SABANDO DENISSE VALENTINA', pos: 10 },
-            ]
-          },
-          {
-            id: 'e4-row-4',
-            school: 'UE Fiscal Tarqui - Matutina',
-            seatsLeft: [
-              { id: 'e4-s4-1', name: 'ALCIVAR ESPINALES GEMA VALENTINA', pos: 1 },
-              { id: 'e4-s4-2', name: 'MERO ACOSTA JORGE LUIS', pos: 2 },
-              { id: 'e4-s4-3', name: 'BARRETO CATAGUA MISHELLE ANAHI', pos: 3 },
-              { id: 'e4-s4-4', name: 'BARRETO CHANCAY ALISSON DENISSE', pos: 4 },
-            ],
-            hasRector: true,
-            seatsRight: [
-              { id: 'e4-s4-6', name: 'OLIVES ESPINALES LUCELY CHENOA', pos: 6 },
-              { id: 'e4-s4-7', name: 'DELGADO BURGOS ADOLFO DANIEL', pos: 7 },
-              { id: 'e4-s4-8', name: 'CASTRO FLORES MILENA MICHELLE', pos: 8 },
-              { id: 'e4-s4-9', name: 'LEONES BRAVO GILEYMA DARLEY', pos: 9 },
-              { id: 'e4-s4-10', name: 'BARRETO CHANCAY ALAN DAMIAN', pos: 10 },
-            ]
-          },
-          {
-            id: 'e4-row-5',
-            school: 'UE Fiscal Tarqui - Vespertina',
-            seatsLeft: [
-              { id: 'e4-s5-1', name: 'SUAREZ CEDEÑO MELANY MONSERRATE', pos: 1 },
-              { id: 'e4-s5-2', name: 'PAREDES VELEZ NAYELI ELIZABETH', pos: 2 },
-              { id: 'e4-s5-3', name: 'CEDEÑO PALMA MADAY ADAIS', pos: 3 },
-              { id: 'e4-s5-4', name: 'VERA CASTRO MARIA ISABEL', pos: 4 },
-            ],
-            hasRector: true,
-            seatsRight: [
-              { id: 'e4-s5-6', name: 'CHAVEZTA BAZURTO KEYLA PIERINA', pos: 6 },
-              { id: 'e4-s5-7', name: 'MACIAS MACIAS ANDREA CRISTINA', pos: 7 },
-              { id: 'e4-s5-8', name: 'LOPEZ LOOR DAMARIS JULIETH', pos: 8 },
-              { id: 'e4-s5-9', name: 'FIGUEROA ROMERO BRIANNA ANELIS', pos: 9 },
-              { id: 'e4-s5-10', name: 'PALMA SOLEDISPA EMELY NAHOMY', pos: 10 },
-            ]
-          }
+            createRow('e4-r1', 'UE Julio Pierregrosse', 
+                ['DELGADO CHACON SAMUEL JOSE', 'VARGAS CAICEDO MATHIAS JAVIER', 'REYES DELGADO LUIS MATHEUS', 'CEDEÑO DELGADO MARIA GABRIELA'],
+                ['CASTELLANOS MUÑOZ BRAYDEN MIGUEL', 'VELASQUEZ PONCE ROLANDO ADRIAN', 'SANCHEZ DELGADO MARCELO RAPHAEL', 'MOREIRA CHAVEZ GIOVANNA MILENKA', 'GARCIA VALLE CESAR EMILIO']
+            ),
+            createRow('e4-r2', 'UE Israel', 
+                ['ORTEGA CONFORME RAFELLA VALENTINA', 'ORDOÑEZ PAZMIÑO CAMILA ESTEFANÍA', 'ORTIZ AVILA PAOLO XAVIER', 'PARRAGA MOGROÑEDA ALLYSON EILENE'],
+                ['LEITON MENDOZA DAIRA ABIGAIL', 'ZAMORA CERÓN DEREK ISAAC', 'OCHOA LIMONGI RICARDO', 'BILBAO LA VIEJA FARFAN CARLOS EDUARDO', 'PALMA FLORES YUSZETTY DAVID']
+            ),
+            createRow('e4-r3', 'UE Fiscal Pedro Balda', 
+                ['ZAMBRANO MOREIRA DANNA JUSMELY', 'SANCHEZ GARCIA ESTHER ABIGAIL', 'PONCE MERA MELANIE MONSERRATE', 'MORAN ARAGUNDI KAREN GABRIELA'],
+                ['SANCHEZ ALVARADO MEYSEE MAYTE', 'MEZA TOALA JOSENKA DOMENICA', 'BAJAÑA CEDEÑO DILEIDY JETSARI', 'CARDENAS CEVALLOS ASHLEY JELITZA', 'ZAMBRANO SABANDO DENISSE VALENTINA']
+            ),
+            createRow('e4-r4', 'UE Fiscal Tarqui - Matutina', 
+                ['ALCIVAR ESPINALES GEMA VALENTINA', 'MERO ACOSTA JORGE LUIS', 'BARRETO CATAGUA MISHELLE ANAHI', 'BARRETO CHANCAY ALISSON DENISSE'],
+                ['OLIVES ESPINALES LUCELY CHENOA', 'DELGADO BURGOS ADOLFO DANIEL', 'CASTRO FLORES MILENA MICHELLE', 'LEONES BRAVO GILEYMA DARLEY', 'BARRETO CHANCAY ALAN DAMIAN']
+            ),
+            createRow('e4-r5', 'UE Fiscal Tarqui - Vespertina', 
+                ['SUAREZ CEDEÑO MELANY MONSERRATE', 'PAREDES VELEZ NAYELI ELIZABETH', 'CEDEÑO PALMA MADAY ADAIS', 'VERA CASTRO MARIA ISABEL'],
+                ['CHAVEZTA BAZURTO KEYLA PIERINA', 'MACIAS MACIAS ANDREA CRISTINA', 'LOPEZ LOOR DAMARIS JULIETH', 'FIGUEROA ROMERO BRIANNA ANELIS', 'PALMA SOLEDISPA EMELY NAHOMY']
+            )
         ];
 
         const EVENTS = [
@@ -426,36 +166,36 @@
           { id: 4, name: 'Sesión 4: Vespertina', data: event4Data, color: 'orange' },
         ];
 
-        // --- FUNCIONES DE EXPORTACIÓN ---
-
         const exportToExcelHTML = (data, fileName) => {
+          const uniqueSessions = [...new Set(data.map(d => d.eventName))];
+          const sessionTitle = uniqueSessions.length === 1 ? uniqueSessions[0] : "Reporte General";
+          const date = new Date().toLocaleString();
+
           const tableContent = `
             <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
             <head>
               <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
               <style>
                 table { border-collapse: collapse; width: 100%; font-family: Arial, sans-serif; }
-                th { background-color: #1e3a8a; color: white; border: 1px solid #000; padding: 10px; font-weight: bold; text-align: center; }
+                th { background-color: #1e3a8a; color: white; border: 1px solid #000; padding: 10px; text-align: center; }
                 td { border: 1px solid #000; padding: 8px; vertical-align: middle; }
-                .presente { background-color: #dcfce7; color: #166534; font-weight: bold; text-align: center; }
-                .ausente { background-color: #fee2e2; color: #991b1b; text-align: center; }
-                .text-center { text-align: center; }
+                .presente { color: #166534; font-weight: bold; text-align: center; }
+                .ausente { color: #991b1b; text-align: center; }
               </style>
             </head>
             <body>
               <table>
                 <thead>
-                  <tr>
-                    <th colspan="7" style="font-size: 16px; background-color: #f3f4f6; color: #000;">REPORTE DE ASISTENCIA - ABANDERADOS UTPL</th>
-                  </tr>
+                  <tr><th colspan="8" style="font-size: 14px; background-color: #f3f4f6; color: #000; text-align: left;">SESIÓN: ${sessionTitle} - FECHA: ${date}</th></tr>
                   <tr>
                     <th>Evento</th>
                     <th>Institución</th>
                     <th>Fila</th>
                     <th>Estudiante</th>
-                    <th>Asiento #</th>
+                    <th>Asiento</th>
+                    <th>Dignidad</th>
                     <th>Bloque</th>
-                    <th>Estado Asistencia</th>
+                    <th>Estado</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -463,10 +203,11 @@
                     <tr>
                       <td>${row.eventName}</td>
                       <td>${row.school}</td>
-                      <td class="text-center">${row.rowId}</td>
+                      <td style="text-align:center">${row.rowId.split('-r')[1] || row.rowId}</td>
                       <td>${row.name}</td>
-                      <td class="text-center">${row.pos}</td>
-                      <td class="text-center">${row.block}</td>
+                      <td style="text-align:center">${row.pos}</td>
+                      <td style="font-weight:bold">${row.dignity}</td>
+                      <td style="text-align:center">${row.block}</td>
                       <td class="${row.status === 'PRESENTE' ? 'presente' : 'ausente'}">${row.status}</td>
                     </tr>
                   `).join('')}
@@ -477,570 +218,178 @@
           `;
 
           const blob = new Blob([tableContent], { type: 'application/vnd.ms-excel' });
-          const url = window.URL.createObjectURL(blob);
           const link = document.createElement('a');
-          link.href = url;
+          link.href = window.URL.createObjectURL(blob);
           link.download = fileName.endsWith('.xls') ? fileName : `${fileName}.xls`;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          window.URL.revokeObjectURL(url);
+          document.body.appendChild(link); link.click(); document.body.removeChild(link);
         };
 
-        const generateTextReport = (data) => {
-            const date = new Date().toLocaleString();
-            const total = data.length;
-            const presentes = data.filter(r => r.status === 'PRESENTE').length;
-            const ausentes = total - presentes;
-            
-            let text = `📋 *REPORTE DE ASISTENCIA UTPL*\n📅 Fecha: ${date}\n✅ Presentes: ${presentes}\n❌ Ausentes: ${ausentes}\n\n*LISTADO DE ASISTENCIA:*\n`;
-            
-            // Agrupar por colegio para mejor lectura
-            const grouped = {};
-            data.forEach(r => {
-                if (!grouped[r.school]) grouped[r.school] = [];
-                grouped[r.school].push(r);
-            });
+        const EventSelector = ({ onSelectEvent, onExportGlobal }) => (
+          <div className="min-h-screen bg-gray-50 flex flex-col font-sans text-slate-800">
+            <header className="bg-blue-900 text-white p-6 shadow-lg text-center">
+              <h1 className="text-3xl font-bold text-yellow-400">UTPL - Gestión de Abanderados</h1>
+              <p className="text-blue-200 mt-2">Seleccione la sesión para gestionar</p>
+            </header>
+            <main className="flex-grow p-6 flex flex-col items-center justify-center">
+              <div className="w-full max-w-4xl mb-8 flex justify-end">
+                 <button onClick={onExportGlobal} className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl shadow-md font-bold flex items-center gap-2"><FileSpreadsheet size={24}/> Reporte General (.xls)</button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl w-full">
+                {EVENTS.map(evt => (
+                  <button key={evt.id} onClick={() => onSelectEvent(evt)} className={`group relative overflow-hidden p-8 rounded-2xl shadow-md border-2 text-left transition-all hover:shadow-xl hover:-translate-y-1 bg-white border-${evt.color}-100 hover:border-${evt.color}-500`}>
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className={`p-3 rounded-full bg-${evt.color}-100 text-${evt.color}-600`}><Calendar size={32}/></div>
+                      <h2 className="text-2xl font-bold text-gray-800">{evt.name}</h2>
+                    </div>
+                    <p className="text-gray-500 mb-6 pl-1">{evt.data.length} Filas registradas.</p>
+                    <div className="flex items-center text-sm font-semibold text-gray-400 group-hover:text-gray-800 transition-colors">Ingresar <ChevronRight size={16}/></div>
+                  </button>
+                ))}
+              </div>
+            </main>
+          </div>
+        );
 
-            Object.keys(grouped).forEach(school => {
-                text += `\n🏫 *${school}*\n`;
-                grouped[school].forEach(r => {
-                    const icon = r.status === 'PRESENTE' ? '✅' : '❌';
-                    text += `${icon} ${r.name} (Asiento ${r.pos})\n`;
-                });
-            });
-
-            return text;
-        };
-
-        const copyToClipboard = (text) => {
-            const textarea = document.createElement("textarea");
-            textarea.value = text;
-            document.body.appendChild(textarea);
-            textarea.select();
-            document.execCommand("copy");
-            document.body.removeChild(textarea);
-            alert("¡Reporte copiado! Ahora puedes pegarlo en WhatsApp o Correo.");
-        };
-
-        const handlePrint = () => {
-            window.print();
-        };
-
-        // --- COMPONENTES ---
-
-        const EventSelector = ({ onSelectEvent, onExportGlobal }) => {
-          return (
-            <div className="min-h-screen bg-gray-50 font-sans text-slate-800 flex flex-col no-print">
-              <header className="bg-blue-900 text-white p-6 shadow-lg">
-                <div className="max-w-4xl mx-auto text-center">
-                  <h1 className="text-3xl font-bold text-yellow-400">UTPL - Gestión de Eventos</h1>
-                  <p className="text-blue-200 mt-2">Seleccione la sesión para gestionar los asientos</p>
-                </div>
-              </header>
-
-              <main className="flex-grow p-6 flex flex-col items-center justify-center">
-                <div className="w-full max-w-4xl mb-8 flex flex-col md:flex-row justify-end gap-3">
-                   <button 
-                     onClick={handlePrint}
-                     className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-3 rounded-xl shadow-md font-bold flex items-center justify-center gap-2 transition-transform hover:-translate-y-1"
-                   >
-                      <Printer size={20} />
-                      Imprimir Lista
-                   </button>
-                   <button 
-                     onClick={onExportGlobal}
-                     className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl shadow-md font-bold flex items-center justify-center gap-2 transition-transform hover:-translate-y-1"
-                   >
-                      <FileSpreadsheet size={24} />
-                      Descargar Reporte General (.xls)
-                   </button>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl w-full">
-                  {EVENTS.map((evt) => (
-                    <button
-                      key={evt.id}
-                      onClick={() => onSelectEvent(evt)}
-                      className={`
-                        group relative overflow-hidden p-8 rounded-2xl shadow-md border-2 text-left transition-all hover:shadow-xl hover:-translate-y-1
-                        ${evt.color === 'blue' ? 'bg-white border-blue-100 hover:border-blue-500' : ''}
-                        ${evt.color === 'purple' ? 'bg-white border-purple-100 hover:border-purple-500' : ''}
-                        ${evt.color === 'emerald' ? 'bg-white border-emerald-100 hover:border-emerald-500' : ''}
-                        ${evt.color === 'orange' ? 'bg-white border-orange-100 hover:border-orange-500' : ''}
-                      `}
-                    >
-                      <div className={`
-                        absolute top-0 right-0 p-3 rounded-bl-2xl text-white font-bold text-xl opacity-20 group-hover:opacity-100 transition-opacity
-                        ${evt.color === 'blue' ? 'bg-blue-500' : ''}
-                        ${evt.color === 'purple' ? 'bg-purple-500' : ''}
-                        ${evt.color === 'emerald' ? 'bg-emerald-500' : ''}
-                        ${evt.color === 'orange' ? 'bg-orange-500' : ''}
-                      `}>
-                        #{evt.id}
-                      </div>
-
-                      <div className="flex items-center gap-4 mb-4">
-                        <div className={`
-                          p-3 rounded-full 
-                          ${evt.color === 'blue' ? 'bg-blue-100 text-blue-600' : ''}
-                          ${evt.color === 'purple' ? 'bg-purple-100 text-purple-600' : ''}
-                          ${evt.color === 'emerald' ? 'bg-emerald-100 text-emerald-600' : ''}
-                          ${evt.color === 'orange' ? 'bg-orange-100 text-orange-600' : ''}
-                        `}>
-                          <Calendar size={32} />
-                        </div>
-                        <h2 className="text-2xl font-bold text-gray-800">{evt.name}</h2>
-                      </div>
-                      
-                      <p className="text-gray-500 mb-6 pl-1">
-                        {evt.data.length} Filas registradas.
-                        Gestionar asientos y asistencia.
-                      </p>
-
-                      <div className="flex items-center text-sm font-semibold text-gray-400 group-hover:text-gray-800 transition-colors">
-                        Ingresar al evento <ChevronRight size={16} />
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </main>
-            </div>
-          );
-        };
-
-        // --- COMPONENTE ASIENTO ---
         const Seat = ({ seat, isSelected, isChecked, isDimmed, onClick }) => {
-          const isVacant = seat.name === 'VACANTE';
-
-          if (isVacant) {
-              return <div className="w-12 h-12 m-1 opacity-0 pointer-events-none"></div>;
-          }
-
+          if (seat.name === 'VACANTE') return <div className="w-12 h-12 m-1 opacity-0 pointer-events-none"></div>;
           let iconClass = "text-blue-200 fill-blue-50"; 
           let containerClass = "hover:scale-110";
-
-          if (isSelected) {
-            iconClass = "text-yellow-500 fill-yellow-200 drop-shadow-md";
-            containerClass = "scale-125 z-10";
-          } else if (isChecked) {
-             if (isDimmed) {
-                iconClass = "text-green-200 fill-green-50";
-                containerClass = "";
-             } else {
-                iconClass = "text-green-600 fill-green-100";
-             }
-          } else if (isDimmed) {
-             iconClass = "text-gray-200 fill-gray-50";
-             containerClass = "";
-          }
-
+          if (isSelected) { iconClass = "text-yellow-500 fill-yellow-200 drop-shadow-md"; containerClass = "scale-125 z-10"; }
+          else if (isChecked) {
+             if (isDimmed) { iconClass = "text-green-200 fill-green-50"; containerClass = ""; }
+             else { iconClass = "text-green-600 fill-green-100"; }
+          } else if (isDimmed) { iconClass = "text-gray-200 fill-gray-50"; containerClass = ""; }
           return (
-            <div 
-              onClick={onClick}
-              className={`relative flex flex-col items-center justify-center p-1 transition-all duration-300 cursor-pointer ${containerClass}`}
-              title={`${seat.name} - Asiento ${seat.pos}`}
-            >
+            <div onClick={onClick} className={`relative flex flex-col items-center justify-center p-1 transition-all duration-300 cursor-pointer ${containerClass}`} title={`${seat.name}\n${seat.dignity}`}>
               <ChairIcon size={38} className={iconClass} fill={isChecked || isSelected ? "currentColor" : "none"} />
-              <div className="absolute -top-1 -right-1 w-5 h-5 bg-white border border-gray-200 rounded-full flex items-center justify-center text-[10px] font-bold text-gray-600 shadow-sm z-20">
-                {seat.pos}
-              </div>
-               {isChecked && !isSelected && !isDimmed && (
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-                     <CheckCircle size={22} className="text-green-700 bg-white rounded-full p-0.5 shadow-sm" fill="currentColor"/>
-                  </div>
-               )}
+              <div className="absolute -top-1 -right-1 w-5 h-5 bg-white border border-gray-200 rounded-full flex items-center justify-center text-[10px] font-bold text-gray-600 shadow-sm z-20">{seat.pos}</div>
+               {isChecked && !isSelected && !isDimmed && (<div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20"><CheckCircle size={22} className="text-green-700 bg-white rounded-full p-0.5 shadow-sm" fill="currentColor"/></div>)}
             </div>
           );
         };
 
-        const EventWorkspace = ({ event, checkedStudents, onToggleAttendance, onGoHome, onExportEvent }) => {
+        const EventWorkspace = ({ event, checkedStudents, onToggleAttendance, onGoHome, onExportEvent, syncStatus }) => {
           const [searchTerm, setSearchTerm] = useState('');
           const [selectedStudent, setSelectedStudent] = useState(null);
           const seatingData = event.data;
 
-          const normalizeText = (text) => {
-            return text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-          };
-
+          const normalize = (t) => t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
           const searchResults = useMemo(() => {
             if (!searchTerm || searchTerm.length < 2) return [];
-            
-            const normalizedTerm = normalizeText(searchTerm);
-            const searchTerms = normalizedTerm.split(" ").filter(t => t.length > 0);
-            
-            let results = [];
-            seatingData.forEach(row => {
-              const processSeat = (seat, block) => {
-                if (seat.name === 'VACANTE') return;
-                
-                const normalizedName = normalizeText(seat.name);
-                const isMatch = searchTerms.every(term => normalizedName.includes(term));
-                
-                if (isMatch) {
-                  results.push({ ...seat, school: row.school, rowId: row.id, block });
-                }
-              };
-
-              row.seatsLeft.forEach(s => processSeat(s, 'Izquierda'));
-              row.seatsRight.forEach(s => processSeat(s, 'Derecha'));
+            const term = normalize(searchTerm);
+            let res = [];
+            seatingData.forEach(r => {
+              const check = (s) => { if(s.name!=='VACANTE' && normalize(s.name).includes(term)) res.push({...s, school:r.school, rowId:r.id}); };
+              r.seatsLeft.forEach(check); r.seatsRight.forEach(check);
             });
-            return results;
+            return res;
           }, [searchTerm, seatingData]);
 
-          const handleSelectStudent = (student) => {
-            setSelectedStudent(student);
-            setSearchTerm('');
-            const mapElement = document.getElementById('map-view');
-            setTimeout(() => {
-               if(mapElement) mapElement.scrollIntoView({ behavior: 'smooth' });
-            }, 100);
-          };
-
-          const clearSelection = () => {
-            setSelectedStudent(null);
-            setSearchTerm('');
-          };
-
-          const currentEventStudentIds = useMemo(() => {
-             const ids = new Set();
-             seatingData.forEach(row => {
-               row.seatsLeft.forEach(s => ids.add(s.id));
-               row.seatsRight.forEach(s => ids.add(s.id));
-             });
-             return ids;
-          }, [seatingData]);
+          const handleSelectStudent = (s) => { setSelectedStudent(s); setSearchTerm(''); setTimeout(()=>document.getElementById('map-view').scrollIntoView({behavior:'smooth'}),100); };
+          const checkedArray = useMemo(() => [...checkedStudents], [checkedStudents]);
           
-          const checkedArray = useMemo(() => {
-            try {
-                return [...checkedStudents];
-            } catch(e) {
-                return [];
-            }
-          }, [checkedStudents]);
-
-          const eventAttendanceCount = checkedArray.filter(id => currentEventStudentIds.has(id)).length;
-
-          const getEventDataForReport = () => {
-              let reportData = [];
-              event.data.forEach(row => {
-                row.seatsLeft.forEach(seat => {
-                  if (seat.name !== 'VACANTE') {
-                    reportData.push({
-                      eventName: event.name,
-                      school: row.school,
-                      rowId: row.id.split('-row-')[1] || row.id,
-                      name: seat.name,
-                      pos: seat.pos,
-                      block: 'Izquierda',
-                      status: checkedStudents.has(seat.id) ? 'PRESENTE' : 'AUSENTE'
-                    });
-                  }
-                });
-                row.seatsRight.forEach(seat => {
-                  if (seat.name !== 'VACANTE') {
-                    reportData.push({
-                      eventName: event.name,
-                      school: row.school,
-                      rowId: row.id.split('-row-')[1] || row.id,
-                      name: seat.name,
-                      pos: seat.pos,
-                      block: 'Derecha',
-                      status: checkedStudents.has(seat.id) ? 'PRESENTE' : 'AUSENTE'
-                    });
-                  }
-                });
-              });
-              return reportData;
-          };
-
-          const handleCopyReport = () => {
-              const data = getEventDataForReport();
-              const text = generateTextReport(data);
-              copyToClipboard(text);
-          };
+          let totalSeats = 0;
+          seatingData.forEach(r => {
+             r.seatsLeft.forEach(s => {if(s.name!=='VACANTE') totalSeats++});
+             r.seatsRight.forEach(s => {if(s.name!=='VACANTE') totalSeats++});
+          });
+          const eventIds = new Set();
+          seatingData.forEach(r => { r.seatsLeft.forEach(s=>eventIds.add(s.id)); r.seatsRight.forEach(s=>eventIds.add(s.id)); });
+          const presentCount = checkedArray.filter(id => eventIds.has(id)).length;
+          const freeCount = totalSeats - presentCount;
 
           return (
             <div className="min-h-screen bg-gray-50 flex flex-col font-sans text-slate-800">
-              <header className="bg-blue-900 text-white p-4 shadow-lg sticky top-0 z-50 no-print">
+              <header className="bg-blue-900 text-white p-4 shadow-lg sticky top-0 z-50">
                 <div className="max-w-7xl mx-auto flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <button 
-                      onClick={onGoHome}
-                      className="p-2 hover:bg-blue-800 rounded-lg transition-colors flex items-center gap-2 text-sm text-blue-200 hover:text-white"
-                    >
-                      <ArrowLeft size={20} />
-                      <span className="hidden md:inline">Eventos</span>
-                    </button>
-                    <div className="h-8 w-px bg-blue-700 mx-2"></div>
+                    <button onClick={onGoHome} className="p-2 hover:bg-blue-800 rounded-lg flex items-center gap-2 text-sm text-blue-200 hover:text-white"><ArrowLeft size={20}/><span className="hidden md:inline">Eventos</span></button>
                     <div>
-                      <h1 className="text-xl font-bold text-yellow-400">UTPL - {event.name}</h1>
-                      <p className="text-xs text-blue-200">Organizador de Asientos</p>
+                        <h1 className="text-xl font-bold text-yellow-400">{event.name}</h1>
+                        <div className="flex items-center gap-2">
+                            <p className="text-xs text-blue-200">Asientos</p>
+                            {syncStatus && <span className="text-[10px] bg-blue-800 px-2 py-0.5 rounded-full text-green-300 font-bold border border-green-500/30 animate-pulse">{syncStatus}</span>}
+                        </div>
                     </div>
                   </div>
-                  
                   <div className="flex items-center gap-2">
-                     <button
-                       onClick={handleCopyReport}
-                       className="p-2 bg-indigo-600 hover:bg-indigo-700 rounded-lg text-white transition-colors flex items-center gap-2 text-sm shadow-sm"
-                       title="Copiar lista para WhatsApp/Email"
-                     >
-                        <Copy size={18} />
-                        <span className="hidden md:inline">Copiar</span>
-                     </button>
-                     
-                     <button
-                       onClick={onExportEvent}
-                       className="p-2 bg-green-600 hover:bg-green-700 rounded-lg text-white transition-colors flex items-center gap-2 text-sm shadow-sm"
-                       title="Exportar Lista a Excel"
-                     >
-                        <Download size={18} />
-                        <span className="hidden md:inline">Excel</span>
-                     </button>
-
-                    <div className="hidden md:flex flex-col items-end mr-4">
-                        <span className="text-xs text-blue-200 font-semibold">ASISTENCIA</span>
-                        <span className="text-xl font-bold text-white flex items-center gap-2">
-                            <Users size={18} /> {eventAttendanceCount}
-                        </span>
-                    </div>
-                    
-                    {selectedStudent && (
-                        <button 
-                        onClick={clearSelection}
-                        className="text-sm bg-blue-800 hover:bg-blue-700 px-3 py-2 rounded flex items-center gap-1 transition-colors border border-blue-700"
-                        >
-                        <X size={16} /> Limpiar
-                        </button>
-                    )}
+                     <button onClick={onExportEvent} className="p-2 bg-green-600 hover:bg-green-700 rounded-lg text-white text-sm flex gap-1"><Download size={18}/><span className="hidden md:inline">Excel</span></button>
+                     <div className="hidden md:flex flex-col items-end mx-2"><span className="text-xs font-semibold text-blue-200">ASISTENCIA</span><span className="text-xl font-bold">{presentCount}</span><span className="text-[10px] text-green-300">Libres: {freeCount}</span></div>
+                     {selectedStudent && <button onClick={()=>setSelectedStudent(null)} className="p-2 bg-blue-800 rounded text-white"><X size={16}/></button>}
                   </div>
                 </div>
               </header>
 
-              {/* VISTA SOLO PARA IMPRESIÓN */}
-              <div className="print-only p-8">
-                  <h1 className="text-2xl font-bold text-center mb-4">REPORTE DE ASISTENCIA - {event.name}</h1>
-                  <p className="text-center mb-6">Fecha: {new Date().toLocaleDateString()}</p>
-                  
-                  <div className="grid grid-cols-2 gap-8">
-                      {event.data.map(row => (
-                          <div key={row.id} className="mb-4 break-inside-avoid">
-                              <h3 className="font-bold border-b border-black mb-2">{row.school}</h3>
-                              <ul className="text-sm">
-                                  {row.seatsLeft.concat(row.seatsRight).filter(s => s.name !== 'VACANTE').map(s => (
-                                      <li key={s.id} className="flex justify-between py-1 border-b border-gray-100">
-                                          <span>{s.name}</span>
-                                          <span className="font-bold">{checkedStudents.has(s.id) ? '✅' : '❌'}</span>
-                                      </li>
-                                  ))}
-                              </ul>
-                          </div>
-                      ))}
-                  </div>
-              </div>
-
-              <main className="flex-grow p-4 md:p-6 max-w-7xl mx-auto w-full no-print">
-                {/* Panel de Búsqueda */}
+              <main className="flex-grow p-4 md:p-6 max-w-7xl mx-auto w-full">
                 <div className="mb-6 max-w-3xl mx-auto relative z-40">
-                  <div className="relative">
-                    <input
-                      type="text"
-                      placeholder={`Buscar en ${event.name}...`}
-                      className="w-full pl-12 pr-4 py-4 rounded-xl border-2 border-blue-100 shadow-lg focus:border-yellow-400 focus:ring-4 focus:ring-yellow-100 focus:outline-none text-lg transition-all"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                    <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
-                        <Search size={24} />
-                    </div>
-                  </div>
-
-                  {searchResults.length > 0 && (
-                    <div className="absolute mt-2 w-full bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden max-h-[60vh] overflow-y-auto">
-                      {searchResults.map((student) => {
-                        const isChecked = checkedStudents.has(student.id);
-                        return (
-                          <button
-                            key={student.id}
-                            onClick={() => handleSelectStudent(student)}
-                            className="w-full text-left px-6 py-4 hover:bg-blue-50 border-b border-gray-50 last:border-0 flex justify-between items-center group transition-colors"
-                          >
-                            <div>
-                              <p className="font-bold text-gray-800 group-hover:text-blue-900 flex items-center gap-2">
-                                {student.name}
-                                {isChecked && <CheckCircle size={16} className="text-green-500" fill="#dcfce7"/>}
-                              </p>
-                              <p className="text-xs text-gray-500">{student.school}</p>
-                            </div>
-                            <span className="text-xs font-semibold bg-blue-100 text-blue-800 px-3 py-1 rounded-full">
-                              Asiento {student.pos}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
+                   <div className="relative">
+                      <input type="text" placeholder="Buscar estudiante..." className="w-full pl-10 pr-4 py-3 rounded-xl border border-blue-200 shadow-sm focus:border-yellow-400 focus:outline-none" value={searchTerm} onChange={e=>setSearchTerm(e.target.value)} />
+                      <div className="absolute left-3 top-3 text-gray-400"><Search size={20}/></div>
+                   </div>
+                   {searchResults.length > 0 && (
+                      <div className="absolute top-full mt-2 w-full bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden max-h-[50vh] overflow-y-auto z-50">
+                         {searchResults.map(s => (
+                            <button key={s.id} onClick={()=>handleSelectStudent(s)} className="w-full text-left px-4 py-3 hover:bg-blue-50 border-b border-gray-50 flex justify-between items-center">
+                               <div><p className="font-bold text-gray-800 text-sm">{s.name}</p><p className="text-xs text-gray-500">{s.school}</p></div>
+                               <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">{s.pos}</span>
+                            </button>
+                         ))}
+                      </div>
+                   )}
                 </div>
 
-                {/* Panel Detalle Estudiante */}
-                {selectedStudent ? (
-                  <div className="mb-8 bg-white border-l-8 border-yellow-400 p-6 rounded-r-xl shadow-md max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 animate-in fade-in slide-in-from-top-4">
-                    <div className="flex items-start gap-4 flex-1">
-                      <div className="bg-yellow-100 p-3 rounded-full text-yellow-700">
-                        <User size={32} />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="font-bold text-sm text-gray-500 uppercase tracking-wide flex items-center gap-2">
-                            Estudiante Seleccionado
-                            <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full border border-yellow-200">
-                                Seleccionado en Mapa
-                            </span>
-                        </h3>
-                        <p className="text-2xl font-bold text-gray-900 leading-tight mt-1">{selectedStudent.name}</p>
-                        
-                        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 bg-gray-50 p-3 rounded-lg border border-gray-200">
-                            <div className="flex flex-col">
-                                <span className="text-xs font-bold text-gray-400 uppercase">Fila / Institución</span>
-                                <span className="font-bold text-blue-900 text-lg leading-tight">{selectedStudent.school}</span>
+                {selectedStudent && (
+                   <div className="mb-6 bg-white border-l-4 border-yellow-400 p-4 rounded shadow-md flex flex-col md:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2">
+                      <div className="flex items-start gap-3 flex-1">
+                         <div className="bg-yellow-100 p-2 rounded-full text-yellow-700"><User size={24}/></div>
+                         <div>
+                            <h3 className="text-xs font-bold text-gray-400 uppercase">Estudiante Seleccionado</h3>
+                            <p className="text-lg font-bold text-gray-900 leading-tight">{selectedStudent.name}</p>
+                            <div className="flex flex-wrap gap-2 mt-1 text-sm text-blue-800 font-medium">
+                                <span>{selectedStudent.school}</span>
+                                <span>• Asiento {selectedStudent.pos}</span>
                             </div>
-                            <div className="flex items-center gap-4">
-                                <div className="flex flex-col">
-                                    <span className="text-xs font-bold text-gray-400 uppercase">Asiento</span>
-                                    <span className="font-bold text-blue-900 text-lg">#{selectedStudent.pos}</span>
-                                </div>
-                                <div className="w-px h-8 bg-gray-300"></div>
-                                <div className="flex flex-col">
-                                    <span className="text-xs font-bold text-gray-400 uppercase">Bloque</span>
-                                    <span className="font-bold text-gray-700 text-lg">{selectedStudent.block}</span>
-                                </div>
+                            <div className="mt-2 flex items-center gap-2 text-xs font-bold text-yellow-600 bg-yellow-50 px-2 py-1 rounded border border-yellow-200 w-fit">
+                                <Medal size={14}/> {selectedStudent.dignity}
                             </div>
-                        </div>
+                         </div>
                       </div>
-                    </div>
-
-                    <div className="flex-shrink-0 w-full md:w-auto">
-                       <button
-                         onClick={() => onToggleAttendance(selectedStudent.id)}
-                         className={`w-full md:w-auto px-8 py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-all transform active:scale-95 shadow-lg
-                           ${checkedStudents.has(selectedStudent.id) 
-                             ? 'bg-green-100 text-green-700 border-2 border-green-500 hover:bg-green-200' 
-                             : 'bg-yellow-400 text-yellow-900 border-2 border-yellow-500 hover:bg-yellow-300 hover:shadow-yellow-200'
-                           }`}
-                       >
-                         {checkedStudents.has(selectedStudent.id) ? (
-                           <React.Fragment>
-                             <CheckCircle size={24} className="text-green-600" />
-                             ¡Presente!
-                           </React.Fragment>
-                         ) : (
-                           <React.Fragment>
-                             <div className="w-6 h-6 rounded-full border-2 border-yellow-800"></div>
-                             Marcar Asistencia
-                           </React.Fragment>
-                         )}
-                       </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="mb-8 text-center bg-blue-50 p-4 rounded-xl border border-blue-100 max-w-2xl mx-auto animate-pulse">
-                     <p className="text-blue-800 font-medium flex items-center justify-center gap-2">
-                       <MousePointerClick size={18} />
-                       Haz clic en un asiento del mapa o usa el buscador para ver detalles.
-                     </p>
-                  </div>
+                      <button onClick={()=>onToggleAttendance(selectedStudent.id)} className={`px-6 py-3 rounded-lg font-bold flex items-center gap-2 shadow-sm transition-all active:scale-95 ${checkedStudents.has(selectedStudent.id)?'bg-green-100 text-green-800 border border-green-300':'bg-yellow-400 text-yellow-900 hover:bg-yellow-300'}`}>
+                         {checkedStudents.has(selectedStudent.id)?<><CheckCircle size={20}/> Presente</>:'Marcar Asistencia'}
+                      </button>
+                   </div>
                 )}
 
-                {/* MAPA GRÁFICO (MODIFICADO: Ajuste de alineación y gap) */}
-                <div id="map-view" className="bg-white p-4 md:p-8 rounded-2xl shadow-xl border border-gray-200 overflow-x-auto relative">
-                  <div className="min-w-[500px] mx-auto">
-                    <div className="w-full bg-gray-800 text-gray-300 h-16 rounded-lg mb-10 flex flex-col items-center justify-center font-bold tracking-widest text-sm uppercase shadow-lg border-b-4 border-yellow-500">
-                      <span>ESCENARIO</span>
-                      <span className="text-[10px] font-normal text-gray-400">{event.name}</span>
-                    </div>
-
-                    {/* Encabezado: Ahora usa gap-1 y padding igual que las filas */}
-                    <div className="flex mb-4 text-center text-xs font-bold text-gray-400 uppercase tracking-wider w-full">
-                       <div className="w-28 flex-shrink-0"></div>
-                       {/* Columnas Izquierda - gap-1 para alinear con asientos */}
-                       <div className="flex-grow-[4] basis-0 grid grid-cols-4 gap-1 mr-1">
-                         {[1,2,3,4].map(n => <div key={n}>A{n}</div>)}
-                       </div>
-                       <div className="w-14 text-center"></div>
-                       <div className="w-12"></div>
-                       {/* Columnas Derecha - gap-1 para alinear con asientos */}
-                       <div className="flex-grow-[5] basis-0 grid grid-cols-5 gap-1 ml-2">
-                         {[6,7,8,9,10].map(n => <div key={n}>A{n}</div>)}
-                       </div>
-                    </div>
-
-                    <div className="space-y-6 pb-48">
-                      {seatingData.map((row) => (
-                        <div key={row.id} className="flex items-center group w-full"> {/* items-center asegura centrado vertical */}
-                          <div className={`w-28 flex-shrink-0 flex items-center pr-4 font-bold text-sm border-r-2 border-gray-100 ${
-                            selectedStudent?.rowId === row.id ? 'text-blue-800' : 'text-gray-500'
-                          }`}>
-                            {row.school}
-                          </div>
-
-                          {/* Asientos Izquierda - gap-1 y mr-1 para alinear con encabezado */}
-                          <div className="flex-grow-[4] basis-0 grid grid-cols-4 gap-1 mr-1">
-                            {row.seatsLeft.map((seat) => (
-                              <Seat 
-                                key={seat.id} 
-                                seat={seat} 
-                                isSelected={selectedStudent?.id === seat.id}
-                                isChecked={checkedStudents.has(seat.id)}
-                                isDimmed={selectedStudent && selectedStudent.id !== seat.id}
-                                onClick={() => handleSelectStudent({...seat, school: row.school, rowId: row.id, block: 'Izquierda'})}
-                              />
-                            ))}
-                          </div>
-
-                          <div className="w-14 flex items-center justify-center flex-shrink-0">
-                            {row.hasRector && (
-                              <div className="w-full py-1 bg-slate-100 rounded border border-slate-200 flex items-center justify-center">
-                                 <span className="text-[8px] text-slate-400 font-bold rotate-0">RECTOR</span>
-                              </div>
-                            )}
-                          </div>
-
-                          <div className="w-12 flex items-center justify-center relative flex-shrink-0">
-                            <div className="absolute inset-y-0 left-1/2 border-l-2 border-dashed border-gray-200"></div>
-                          </div>
-
-                          {/* Asientos Derecha - gap-1 y ml-2 para alinear con encabezado */}
-                          <div className="flex-grow-[5] basis-0 grid grid-cols-5 gap-1 ml-2">
-                            {row.seatsRight.map((seat) => (
-                              <Seat 
-                                key={seat.id} 
-                                seat={seat} 
-                                isSelected={selectedStudent?.id === seat.id}
-                                isChecked={checkedStudents.has(seat.id)}
-                                isDimmed={selectedStudent && selectedStudent.id !== seat.id}
-                                onClick={() => handleSelectStudent({...seat, school: row.school, rowId: row.id, block: 'Derecha'})}
-                              />
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="fixed bottom-6 right-6 md:absolute md:bottom-4 md:right-4 bg-white/95 backdrop-blur shadow-xl border border-gray-200 p-4 rounded-xl text-xs space-y-2 z-50">
-                       <h4 className="font-bold text-gray-800 mb-2">Leyenda del Mapa</h4>
-                       <div className="flex items-center gap-2">
-                         <div className="w-4 h-4 rounded bg-white border-2 border-blue-200"></div>
-                         <span>Libre (Clic para seleccionar)</span>
-                       </div>
-                       <div className="flex items-center gap-2">
-                         <div className="w-4 h-4 rounded bg-yellow-300 border-2 border-yellow-500"></div>
-                         <span>Seleccionado</span>
-                       </div>
-                       <div className="flex items-center gap-2">
-                         <div className="w-4 h-4 rounded bg-green-500 border-2 border-green-600 shadow-sm"></div>
-                         <span className="font-bold text-green-700">Asistencia Confirmada</span>
-                       </div>
-                    </div>
-                  </div>
+                <div id="map-view" className="bg-white p-4 md:p-8 rounded-2xl shadow-xl border border-gray-200 overflow-x-auto">
+                   <div className="min-w-[500px] mx-auto">
+                      <div className="w-full bg-gray-800 text-gray-300 h-10 rounded mb-6 flex items-center justify-center font-bold text-xs uppercase shadow border-b-2 border-yellow-500">ESCENARIO ({event.name})</div>
+                      <div className="flex mb-4 text-center text-xs font-bold text-gray-400 uppercase tracking-wider w-full">
+                         <div className="w-28 flex-shrink-0"></div>
+                         <div className="flex-grow-[4] basis-0 grid grid-cols-4 gap-1 mr-1">{[1,2,3,4].map(n=><div key={n}>A{n}</div>)}</div>
+                         <div className="w-14"></div><div className="w-12"></div>
+                         <div className="flex-grow-[5] basis-0 grid grid-cols-5 gap-1 ml-2">{[6,7,8,9,10].map(n=><div key={n}>A{n}</div>)}</div>
+                      </div>
+                      <div className="space-y-6 pb-48">
+                         {seatingData.map(row => (
+                            <div key={row.id} className="flex items-center w-full">
+                               <div className={`w-28 flex-shrink-0 flex items-center pr-2 font-bold text-xs border-r border-gray-200 ${selectedStudent?.rowId===row.id?'text-blue-800':'text-gray-500'}`}>{row.school}</div>
+                               <div className="flex-grow-[4] basis-0 grid grid-cols-4 gap-1 mr-1">
+                                  {row.seatsLeft.map(s => <div key={s.id}><Seat seat={s} isSelected={selectedStudent?.id===s.id} isChecked={checkedStudents.has(s.id)} isDimmed={selectedStudent && selectedStudent.id!==s.id} onClick={()=>handleSelectStudent({...s, school:row.school, rowId:row.id})}/></div>)}
+                               </div>
+                               <div className="w-14 flex justify-center flex-shrink-0">{row.hasRector && <div className="w-full py-1 bg-slate-50 border rounded text-[8px] text-center font-bold text-slate-400">RECTOR</div>}</div>
+                               <div className="w-12 flex justify-center flex-shrink-0"><div className="h-full border-l border-dashed border-gray-300"></div></div>
+                               <div className="flex-grow-[5] basis-0 grid grid-cols-5 gap-1 ml-2">
+                                  {row.seatsRight.map(s => <div key={s.id}><Seat seat={s} isSelected={selectedStudent?.id===s.id} isChecked={checkedStudents.has(s.id)} isDimmed={selectedStudent && selectedStudent.id!==s.id} onClick={()=>handleSelectStudent({...s, school:row.school, rowId:row.id})}/></div>)}
+                               </div>
+                            </div>
+                         ))}
+                      </div>
+                      <div className="fixed bottom-6 right-6 bg-white/95 backdrop-blur shadow-xl border border-gray-200 p-4 rounded-xl text-xs space-y-2 z-50">
+                         <h4 className="font-bold text-gray-800 mb-2">Leyenda</h4>
+                         <div className="flex items-center gap-2"><div className="w-3 h-3 rounded bg-white border border-blue-200"></div> Libre</div>
+                         <div className="flex items-center gap-2"><div className="w-3 h-3 rounded bg-green-500"></div> Presente</div>
+                      </div>
+                   </div>
                 </div>
               </main>
             </div>
@@ -1049,106 +398,77 @@
 
         const AbanderadosApp = () => {
           const [activeEvent, setActiveEvent] = useState(null);
-          
-          const [checkedStudents, setCheckedStudents] = useState(() => {
-            return safeLoadStorage('utpl_asistencia_v2');
-          });
+          const [checkedStudents, setCheckedStudents] = useState(() => safeLoadStorage('utpl_asistencia_v2'));
+          const [syncStatus, setSyncStatus] = useState(null);
+          const syncTimeoutRef = useRef(null);
 
           useEffect(() => {
-            try {
-                const dataToSave = [...checkedStudents];
-                localStorage.setItem('utpl_asistencia_v2', JSON.stringify(dataToSave));
-            } catch(e) {
-                console.error("Error guardando datos:", e);
-            }
+             const saveData = async () => {
+                try {
+                   localStorage.setItem('utpl_asistencia_v2', JSON.stringify([...checkedStudents]));
+                   if (GOOGLE_SCRIPT_URL) {
+                      setSyncStatus('⏳ Guardando...');
+                      // 1. Recolectar TODO
+                      let allData = [];
+                      EVENTS.forEach(ev => ev.data.forEach(r => {
+                         const add = (s) => s.name!=='VACANTE' && allData.push({
+                            id: s.id, name: s.name, school: r.school, pos: s.pos, dignity: s.dignity,
+                            status: checkedStudents.has(s.id) ? 'PRESENTE' : 'AUSENTE',
+                            // Añadimos propiedades para ordenar
+                            eventId: ev.id,
+                            rowId: r.id
+                         });
+                         r.seatsLeft.forEach(add); r.seatsRight.forEach(add);
+                      }));
+                      
+                      // 2. Filtrar SOLO PRESENTES
+                      const onlyPresent = allData.filter(item => item.status === 'PRESENTE');
+
+                      // 3. Ordenar: Primero por Evento, luego por Fila (Escuela), luego por Asiento
+                      onlyPresent.sort((a, b) => {
+                          if (a.eventId !== b.eventId) return a.eventId - b.eventId;
+                          // Comparar strings de filas (ej: e1-r1 vs e1-r2)
+                          if (a.rowId < b.rowId) return -1;
+                          if (a.rowId > b.rowId) return 1;
+                          return a.pos - b.pos;
+                      });
+
+                      await fetch(GOOGLE_SCRIPT_URL, {
+                         method: 'POST',
+                         mode: 'no-cors',
+                         headers: { 'Content-Type': 'application/json' },
+                         body: JSON.stringify(onlyPresent) // Enviamos solo los presentes ordenados
+                      });
+                      setSyncStatus('✅ Sincronizado');
+                      setTimeout(() => setSyncStatus(null), 3000);
+                   }
+                } catch(e) { console.error(e); setSyncStatus('⚠️ Error Sync'); }
+             };
+             if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
+             syncTimeoutRef.current = setTimeout(saveData, 2000);
+             return () => clearTimeout(syncTimeoutRef.current);
           }, [checkedStudents]);
 
-          const toggleAttendance = (studentId) => {
-            setCheckedStudents(prev => {
-              const newSet = new Set(prev);
-              if (newSet.has(studentId)) {
-                newSet.delete(studentId);
-              } else {
-                newSet.add(studentId);
-              }
-              return newSet;
-            });
-          };
+          const toggleAttendance = (id) => setCheckedStudents(prev => { const n = new Set(prev); n.has(id)?n.delete(id):n.add(id); return n; });
 
-          const handleSelectEvent = (event) => {
-            setActiveEvent(event);
-          };
-
-          const goHome = () => {
-            setActiveEvent(null);
-          };
-
-          const generateReport = (eventId = null) => {
-            let reportData = [];
-            const eventsToProcess = eventId ? EVENTS.filter(e => e.id === eventId) : EVENTS;
-
-            eventsToProcess.forEach(event => {
-              event.data.forEach(row => {
-                row.seatsLeft.forEach(seat => {
-                  if (seat.name !== 'VACANTE') {
-                    reportData.push({
-                      eventName: event.name,
-                      school: row.school,
-                      rowId: row.id.split('-row-')[1] || row.id,
-                      name: seat.name,
-                      pos: seat.pos,
-                      block: 'Izquierda',
-                      status: checkedStudents.has(seat.id) ? 'PRESENTE' : 'AUSENTE'
-                    });
-                  }
+          const generateReport = (eventId) => {
+             let data = [];
+             const evts = eventId ? EVENTS.filter(e => e.id === eventId) : EVENTS;
+             evts.forEach(e => e.data.forEach(r => {
+                const add = (s, b) => s.name!=='VACANTE' && data.push({
+                    eventName:e.name,school:r.school,rowId:r.id,name:s.name,pos:s.pos,dignity:s.dignity,block:b,status:checkedStudents.has(s.id)?'PRESENTE':'AUSENTE'
                 });
-                row.seatsRight.forEach(seat => {
-                  if (seat.name !== 'VACANTE') {
-                    reportData.push({
-                      eventName: event.name,
-                      school: row.school,
-                      rowId: row.id.split('-row-')[1] || row.id,
-                      name: seat.name,
-                      pos: seat.pos,
-                      block: 'Derecha',
-                      status: checkedStudents.has(seat.id) ? 'PRESENTE' : 'AUSENTE'
-                    });
-                  }
-                });
-              });
-            });
-
-            const fileName = eventId ? `Asistencia_${eventsToProcess[0].name}.xls` : "Reporte_General_UTPL.xls";
-            exportToExcelHTML(reportData, fileName);
+                r.seatsLeft.forEach(s=>add(s,'Izquierda')); r.seatsRight.forEach(s=>add(s,'Derecha'));
+             }));
+             exportToExcelHTML(data, eventId ? `Asistencia_${evts[0].name}` : "Reporte_General_UTPL");
           };
 
-          if (!activeEvent) {
-            return (
-               <EventSelector 
-                  onSelectEvent={handleSelectEvent} 
-                  onExportGlobal={() => generateReport(null)}
-               />
-            );
-          }
-
-          return (
-            <EventWorkspace 
-              event={activeEvent}
-              checkedStudents={checkedStudents}
-              onToggleAttendance={toggleAttendance}
-              onGoHome={goHome}
-              onExportEvent={() => generateReport(activeEvent.id)}
-            />
-          );
+          if (!activeEvent) return <EventSelector onSelectEvent={setActiveEvent} onExportGlobal={() => generateReport(null)} />;
+          return <EventWorkspace event={activeEvent} checkedStudents={checkedStudents} onToggleAttendance={toggleAttendance} onGoHome={()=>setActiveEvent(null)} onExportEvent={()=>generateReport(activeEvent.id)} syncStatus={syncStatus} />;
         };
 
         const rootElement = document.getElementById('root');
-        if (rootElement) {
-            const root = ReactDOM.createRoot(rootElement);
-            root.render(<AbanderadosApp />);
-        } else {
-            console.error("No se encontró el elemento root");
-        }
+        if (rootElement) ReactDOM.createRoot(rootElement).render(<AbanderadosApp />);
     </script>
 </body>
 </html>
